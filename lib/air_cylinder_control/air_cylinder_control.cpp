@@ -4,16 +4,22 @@
 AirCylinderCtrlFSM::AirCylinderCtrlFSM(
     uint8_t inPinSensor,
     uint8_t outPinValve,
+    uint8_t outPinValveInsert,
     unsigned int confirmTimeInterval,
+    unsigned int insertValveOnInterval,
+    unsigned int insertValveOffInterval,
     unsigned int valveOnInterval,
     unsigned int valveOffInterval)
 {
   _inPinSensor = inPinSensor;
   _outPinValve = outPinValve;
+  _outPinValveInsert = outPinValveInsert;
 
   _confirmTimeInterval = confirmTimeInterval;
   _valveOnInterval = valveOnInterval;
   _valveOffInterval = valveOffInterval;
+  _insertValveOnInterval = insertValveOnInterval;
+  _insertValveOffInterval = insertValveOffInterval;
 
   _currentState = inactive;
 
@@ -66,10 +72,10 @@ void AirCylinderCtrlFSM::run(unsigned long currentTime)
         Serial.println(_confirmTimeInterval);
         Serial.print("Current time interval: ");
         Serial.println(getTimeInterval(currentTime));
-        digitalWrite(_outPinValve, HIGH);
+        digitalWrite(_outPinValveInsert, HIGH);
         _lastChangeTime = currentTime;
-        _currentState = valveOn;
-        Serial.println("State: valveOn");
+        _currentState = insertValveOn;
+        Serial.println("State: insertValveOn");
       }
     }
     else
@@ -79,6 +85,24 @@ void AirCylinderCtrlFSM::run(unsigned long currentTime)
       Serial.println("State: waitOnDetection");
     }
     break;
+  case insertValveOn:
+    if (_insertValveOnInterval < getTimeInterval(currentTime))
+    {
+      digitalWrite(_outPinValveInsert, LOW);
+      _currentState = insertValveOff;
+      _lastChangeTime = currentTime;
+      Serial.println("State: insertValveOff");
+    }
+    break;  
+  case insertValveOff:
+  if (_insertValveOffInterval < getTimeInterval(currentTime))
+    {
+      digitalWrite(_outPinValve, HIGH);
+     _currentState = valveOn;
+      _lastChangeTime = currentTime;
+      Serial.println("State: valveOn");
+    }
+    break;  
   case valveOn:
     if (_valveOnInterval < getTimeInterval(currentTime))
     {

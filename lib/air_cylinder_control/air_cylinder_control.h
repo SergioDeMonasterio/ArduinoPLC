@@ -7,10 +7,12 @@ enum AirCylinderStates
 {
   waitOnDetection = 0,
   confirmDetection = 1,
-  valveOn = 2,
-  valveOff = 3,
-  tubeRemoved = 4,
-  inactive = 5
+  insertValveOn = 2,
+  insertValveOff = 3,
+  valveOn = 4,
+  valveOff = 5,
+  tubeRemoved = 6,
+  inactive = 7
 };
 
 class AirCylinderCtrlFSM
@@ -18,8 +20,11 @@ class AirCylinderCtrlFSM
 private:
   uint8_t _inPinSensor;
   uint8_t _outPinValve;
+  uint8_t _outPinValveInsert;
   unsigned long _lastChangeTime;
   unsigned int _confirmTimeInterval;
+  unsigned int _insertValveOnInterval;
+  unsigned int _insertValveOffInterval;
   unsigned int _valveOnInterval;
   unsigned int _valveOffInterval;
   AirCylinderStates _currentState;
@@ -29,7 +34,10 @@ private:
 public:
   AirCylinderCtrlFSM(uint8_t inPinSensor,
                      uint8_t outPinValve,
+                     uint8_t outPinValve_Insert,
                      unsigned int confirmTimeInterval,
+                     unsigned int insertValveOnInterval,
+                     unsigned int insertValveOffInterval,
                      unsigned int valveOnInterval,
                      unsigned int valveOffInterval);
   void start(unsigned long currentTime);

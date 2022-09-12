@@ -8,16 +8,19 @@ unsigned long currentTime;
 AirCylinderCtrlFSM
     crimper_1 = AirCylinderCtrlFSM(inPins[0],
                                    outPins[0],
-                                   300,
-                                   500,
-                                   1000);
-
-AirCylinderCtrlFSM
-    crimper_2 = AirCylinderCtrlFSM(inPins[1],
                                    outPins[1],
                                    300,
-                                   500,
-                                   1000);
+                                   400,
+                                   400,
+                                   400,
+                                   400);
+
+// AirCylinderCtrlFSM
+//     crimper_2 = AirCylinderCtrlFSM(inPins[1],
+//                                    outPins[1],
+//                                    300,
+//                                    500,
+//                                    1000);
 
 void setup()
 {
@@ -29,17 +32,17 @@ void setup()
   Serial.print("Current time: ");
   Serial.println(currentTime);
   crimper_1.start(currentTime);
-  crimper_2.start(currentTime);
+  // crimper_2.start(currentTime);
 }
 
 void loop()
 {
-  // // connect all input pins with the respective output pins
-  // for (int i = 0; i < inPinQty; i++)
+  // connect all input pins with the respective output pins
+  // for (int i = 1; i < inPinQty; i++)
   // {
   //   connectPins(inPins[i], outPins[i]);
   // }
   currentTime = millis();
   crimper_1.run(currentTime);
-  crimper_2.run(currentTime);
+  // crimper_2.run(currentTime);
 }
