@@ -1,141 +1,166 @@
 #include "air_cylinder_control.h"
 #include <Arduino.h>
 
-AirCylinderCtrlFSM::AirCylinderCtrlFSM(
-    uint8_t inPinSensor,
-    uint8_t outPinValve,
-    uint8_t outPinValveInsert,
-    unsigned int confirmTimeInterval,
-    unsigned int insertValveOnInterval,
-    unsigned int insertValveOffInterval,
-    unsigned int valveOnInterval,
-    unsigned int valveOffInterval)
+CrimperCtrlFSM::CrimperCtrlFSM(
+    uint8_t inPinInductCrimpSensor,
+    uint8_t outPinCrimperValve,
+    uint8_t outPinInsertValve,
+    unsigned int detectionConfirmTime,
+    unsigned int insertValveOnDelay,
+    unsigned int insertValveOnTime,
+    unsigned int crimperValveOnDelay,
+    unsigned int crimperValveOnTime,
+    unsigned int offValvesTime )
 {
-  _inPinSensor = inPinSensor;
-  _outPinValve = outPinValve;
-  _outPinValveInsert = outPinValveInsert;
+  _inPinInductCrimpSensor = inPinInductCrimpSensor;
+  _outPinCrimperValve     = outPinCrimperValve;
+  _outPinInsertValve      = outPinInsertValve;
 
-  _confirmTimeInterval = confirmTimeInterval;
-  _valveOnInterval = valveOnInterval;
-  _valveOffInterval = valveOffInterval;
-  _insertValveOnInterval = insertValveOnInterval;
-  _insertValveOffInterval = insertValveOffInterval;
+  _detectionConfirmTime   = detectionConfirmTime;
+  _insertValveOnDelay     = insertValveOnDelay;
+  _insertValveOnTime      = insertValveOnTime;
+  _crimperValveOnDelay    = crimperValveOnDelay;
+  _crimperValveOnTime     = crimperValveOnTime;
+  _offValvesTime          = offValvesTime;
 
-  _currentState = inactive;
+  _crimpingProcessTime = max(insertValveOnDelay+insertValveOnTime, crimperValveOnDelay+crimperValveOnTime) + offValvesTime;
 
-  Serial.print("Input Pin: ");
-  Serial.println(inPinSensor);
-  Serial.print("Output Pin: ");
-  Serial.println(outPinValve);
+  _crimperState = inactive;
+  _insertValveState = valveOff;
+  _crimperValveState = valveOff;
+
+  // Console output
+  Serial.print("Inductive Sensor Input Pin: "); Serial.println(inPinInductCrimpSensor);
+  Serial.print("Insert Valve Output Pin: "); Serial.println(outPinInsertValve);
+  Serial.print("Crimper Valve Output Pin: "); Serial.println(outPinCrimperValve);
+  Serial.println("Confirm time interval: " + _detectionConfirmTime);
 }
 
-unsigned long AirCylinderCtrlFSM::getTimeInterval(unsigned long currentTime)
+// Public Methods
+
+void CrimperCtrlFSM::start(unsigned long currentTime)
 {
-  unsigned long timeInterval = currentTime - _lastChangeTime;
+  Serial.println("Air cylinder state machine STARTED!");
+  changeCrimperState(waitOnDetection, currentTime);
+}
+
+void CrimperCtrlFSM::stop(unsigned long currentTime)
+{
+  Serial.println("Air cylinder state machine STOPPED!");
+  changeCrimperState(inactive, currentTime);
+}
+
+void CrimperCtrlFSM::run(unsigned long currentTime)
+{
+  crimperFSM(currentTime);
+}
+
+// --------------> Private Methods <-----------------
+
+unsigned long CrimperCtrlFSM::getTimeInterval(unsigned long currentTime, unsigned long lastChangeTime)
+{
+  unsigned long timeInterval = currentTime - lastChangeTime;
   return timeInterval;
 }
 
-void AirCylinderCtrlFSM::start(unsigned long currentTime)
-{
-  _currentState = waitOnDetection;
-  _lastChangeTime = currentTime;
-  Serial.println("Air cylinder state machine STARTED!");
-  Serial.println("State: waitOnDetection");
+ void CrimperCtrlFSM::changeCrimperState(CrimperStates nextCrimperState, unsigned long currentTime){
+  const char* crimperStateStr[] = {"waitOnDetection", "confirmDetection", "crimpingProcess","removingTube", "inactive"};
+    _crimperState = nextCrimperState;
+    _lastCrimperStateChangeTime = currentTime;
+    Serial.print("Crimper State: "); Serial.println("Test 1");
+ }
+
+ void CrimperCtrlFSM::changeInsertValveState(ValveStates nextInsertValveState, unsigned long currentTime){
+  const char* valveStateStr[] = {"valveOnDelay", "valveOn", "valveOff"};
+   _insertValveState = nextInsertValveState;
+   _lastInsertValveStateChangeTime = currentTime;
+   Serial.print("Insert Valve State: "); Serial.println("Test 2");
+ }
+
+ void CrimperCtrlFSM::changeCrimperValveState(ValveStates nextCrimperValveState, unsigned long currentTime){
+  
+   _crimperValveState = nextCrimperValveState;
+   _lastCrimperValveStateChangeTime = currentTime;
+   const char* valveStateStrs[] = {"valveOnDelay", "valveOn", "valveOff"};
+   Serial.print("Crimper Valve State: "); Serial.println("Test 3");
+ }
+
+void CrimperCtrlFSM::insertValveFSM(unsigned long currentTime){
+
+  switch (_insertValveState)
+  {
+    case valveOnDelay:
+      if (_insertValveOnDelay < getTimeInterval(currentTime, _lastInsertValveStateChangeTime)) 
+         changeInsertValveState(valveOn,currentTime);
+      break;
+    case valveOn:
+      digitalWrite(_outPinInsertValve, HIGH);
+      if (_insertValveOnTime < getTimeInterval(currentTime, _lastInsertValveStateChangeTime))
+          changeInsertValveState(valveOff,currentTime);
+      break;
+    case valveOff:
+      digitalWrite(_outPinInsertValve, LOW);
+      if (_crimperState == crimpingProcess) changeInsertValveState(valveOnDelay,currentTime);
+      break;
+    default:
+      if (_crimperState == crimpingProcess) changeInsertValveState(valveOnDelay,currentTime);
+      break;
+  }
+
+}
+void CrimperCtrlFSM::crimperValveFSM(unsigned long currentTime){
+  switch (_crimperValveState)
+  {
+    case valveOnDelay:
+      if (_crimperValveOnDelay < getTimeInterval(currentTime, _lastCrimperValveStateChangeTime)) 
+         changeCrimperValveState(valveOn,currentTime);
+      break;
+    case valveOn:
+      digitalWrite(_outPinCrimperValve, HIGH);
+      if (_crimperValveOnTime < getTimeInterval(currentTime, _lastCrimperValveStateChangeTime))
+          changeCrimperValveState(valveOff,currentTime);
+      break;
+    case valveOff:
+      digitalWrite(_outPinCrimperValve, LOW);
+      if (_crimperState == crimpingProcess) changeCrimperValveState(valveOnDelay,currentTime);
+      break;
+    default:
+      if (_crimperState == crimpingProcess) changeCrimperValveState(valveOnDelay,currentTime);
+      break;
+  }
 }
 
-void AirCylinderCtrlFSM::stop(unsigned long currentTime)
+void CrimperCtrlFSM::crimperFSM(unsigned long currentTime)
 {
-  _currentState = inactive;
-  _lastChangeTime = currentTime;
-  Serial.println("Air cylinder state machine STOPPED!");
-}
-
-void AirCylinderCtrlFSM::run(unsigned long currentTime)
-{
-
-  switch (_currentState)
+  switch (_crimperState)
   {
   case waitOnDetection:
-    if (digitalRead(_inPinSensor) == LOW)
-    {
-      _lastChangeTime = currentTime;
-      _currentState = confirmDetection;
-      Serial.println("State: confirmDetection");
-    }
+    if (digitalRead(_inPinInductCrimpSensor) == LOW) changeCrimperState(confirmDetection, currentTime);
     break;
   case confirmDetection:
-    if (digitalRead(_inPinSensor) == LOW)
+    if (digitalRead(_inPinInductCrimpSensor) == LOW)
     {
-      if (_confirmTimeInterval < getTimeInterval(currentTime))
-      {
-        Serial.print("Confirm time interval: ");
-        Serial.println(_confirmTimeInterval);
-        Serial.print("Current time interval: ");
-        Serial.println(getTimeInterval(currentTime));
-        digitalWrite(_outPinValveInsert, HIGH);
-        _lastChangeTime = currentTime;
-        _currentState = insertValveOn;
-        Serial.println("State: insertValveOn");
-      }
+      if (_detectionConfirmTime < getTimeInterval(currentTime, _lastCrimperStateChangeTime)) 
+        changeCrimperState(crimpingProcess, currentTime);
     }
-    else
-    {
-      _currentState = waitOnDetection;
-      _lastChangeTime = currentTime;
-      Serial.println("State: waitOnDetection");
-    }
+    else changeCrimperState(waitOnDetection, currentTime);
     break;
-  case insertValveOn:
-    if (_insertValveOnInterval < getTimeInterval(currentTime))
-    {
-      digitalWrite(_outPinValveInsert, LOW);
-      _currentState = insertValveOff;
-      _lastChangeTime = currentTime;
-      Serial.println("State: insertValveOff");
-    }
-    break;  
-  case insertValveOff:
-  if (_insertValveOffInterval < getTimeInterval(currentTime))
-    {
-      digitalWrite(_outPinValve, HIGH);
-     _currentState = valveOn;
-      _lastChangeTime = currentTime;
-      Serial.println("State: valveOn");
-    }
-    break;  
-  case valveOn:
-    if (_valveOnInterval < getTimeInterval(currentTime))
-    {
-      digitalWrite(_outPinValve, LOW);
-      _currentState = valveOff;
-      _lastChangeTime = currentTime;
-      Serial.println("State: valveOff");
-    }
+  case crimpingProcess:
+    if ( processActivationDelay < getTimeInterval(currentTime, _lastCrimperStateChangeTime))
+      changeCrimperState(removingTube, currentTime);
     break;
-  case valveOff:
-    if (digitalRead(_inPinSensor) == HIGH)
-    {
-      _currentState = tubeRemoved;
-      _lastChangeTime = currentTime;
-      Serial.println("State: tubeRemoved");
-    }
-    break;
-  case tubeRemoved:
-    if (_valveOffInterval < getTimeInterval(currentTime))
-    {
-      _currentState = waitOnDetection;
-      _lastChangeTime = currentTime;
-      Serial.println("State: waitOnDetection");
-    }
+  case removingTube:
+    if (_crimpingProcessTime < getTimeInterval(currentTime, _lastCrimperStateChangeTime))
+      changeCrimperState(waitOnDetection, currentTime);
     break;
   case inactive:
-    _lastChangeTime = currentTime;
-    Serial.println("State: inactive");
+    changeCrimperState(inactive, currentTime);
     break; // optional
 
   // you can have any number of case statements.
   default: // Optional
-    _currentState = waitOnDetection;
-    Serial.println("State: waitOnDetection");
+    changeCrimperState(waitOnDetection, currentTime);
   }
 }
+
+

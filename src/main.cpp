@@ -5,14 +5,15 @@
 // Crimping-Tool Object Detection
 
 unsigned long currentTime;
-AirCylinderCtrlFSM
-    crimper_1 = AirCylinderCtrlFSM(inPins[0],
+CrimperCtrlFSM
+    crimper_1 = CrimperCtrlFSM(    inPins[0],
                                    outPins[0],
                                    outPins[1],
                                    300,
-                                   400,
-                                   400,
-                                   400,
+                                   150,
+                                   350,
+                                   200,
+                                   150,
                                    400);
 
 // AirCylinderCtrlFSM
