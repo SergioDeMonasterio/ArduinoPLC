@@ -31,8 +31,8 @@ private:
   unsigned int _valveOffInterval;
   CrimperStates _currentState;
 
-  unsigned long getTimeInterval(unsigned long currentTime);
-  void changeState(CrimperStates nextState, unsigned long currentTime);
+  unsigned long getTimeInterval();
+  void changeState(CrimperStates nextState);
   
 public:
   AirCylinderCtrlFSM(uint8_t inPinSensor,
@@ -43,9 +43,9 @@ public:
                      unsigned int insertValveOffInterval,
                      unsigned int valveOnInterval,
                      unsigned int valveOffInterval);
-  void start(unsigned long currentTime);
-  void stop(unsigned long currentTime);
-  void run(unsigned long currentTime);
+  void start();
+  void stop();
+  void run();
 };
 
 #endif

@@ -4,7 +4,6 @@
 #include "../lib/board_config/board_config.h"
 // Crimping-Tool Object Detection
 
-unsigned long currentTime;
 AirCylinderCtrlFSM
     crimper_1 = AirCylinderCtrlFSM(inPins[0],
                                    outPins[0],
@@ -28,11 +27,8 @@ void setup()
   Serial.begin(9600);
   configAllPins();
   delay(1000);
-  currentTime = millis();
-  Serial.print("Current time: ");
-  Serial.println(currentTime);
-  crimper_1.start(currentTime);
-  // crimper_2.start(currentTime);
+  crimper_1.start();
+
 }
 
 void loop()
@@ -42,7 +38,6 @@ void loop()
   // {
   //   connectPins(inPins[i], outPins[i]);
   // }
-  currentTime = millis();
-  crimper_1.run(currentTime);
-  // crimper_2.run(currentTime);
+
+  crimper_1.run();
 }

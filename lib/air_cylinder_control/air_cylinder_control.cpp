@@ -32,83 +32,83 @@ AirCylinderCtrlFSM::AirCylinderCtrlFSM(
   Serial.println(outPinValve);
 }
 
-unsigned long AirCylinderCtrlFSM::getTimeInterval(unsigned long currentTime)
+unsigned long AirCylinderCtrlFSM::getTimeInterval()
 {
-  unsigned long timeInterval = currentTime - _lastChangeTime;
+  unsigned long timeInterval =  millis() - _lastChangeTime;
   return timeInterval;
 }
 
-void AirCylinderCtrlFSM::changeState(CrimperStates nextState, unsigned long currentTime){
+void AirCylinderCtrlFSM::changeState(CrimperStates nextState){
   _currentState = nextState;
-  _lastChangeTime = currentTime;
+  _lastChangeTime = millis();
   Serial.print("State: "); Serial.println(crimperStatesStr[_currentState]);
 }
 
-void AirCylinderCtrlFSM::start(unsigned long currentTime)
+void AirCylinderCtrlFSM::start()
 {
   Serial.println("Air cylinder state machine STARTED!");
-  changeState(waitOnDetection, currentTime);
+  changeState(waitOnDetection);
 }
 
-void AirCylinderCtrlFSM::stop(unsigned long currentTime)
+void AirCylinderCtrlFSM::stop()
 {
   Serial.println("Air cylinder state machine STOPPED!");
-  changeState(inactive, currentTime);
+  changeState(inactive);
 }
 
-void AirCylinderCtrlFSM::run(unsigned long currentTime)
+void AirCylinderCtrlFSM::run()
 {
 
   switch (_currentState)
   {
   case waitOnDetection:
-    if (digitalRead(_inPinSensor) == LOW) changeState(confirmDetection, currentTime);
+    if (digitalRead(_inPinSensor) == LOW) changeState(confirmDetection);
     break;
   case confirmDetection:
     if (digitalRead(_inPinSensor) == LOW)
     {
-      if (_confirmTimeInterval < getTimeInterval(currentTime))
+      if (_confirmTimeInterval < getTimeInterval())
       {
-        Serial.print("Current time interval: "); Serial.println(getTimeInterval(currentTime));
+        Serial.print("Current time interval: "); Serial.println(getTimeInterval());
         digitalWrite(_outPinValveInsert, HIGH);
-        changeState(insertValveOn, currentTime);
+        changeState(insertValveOn);
       }
     }
-    else changeState(waitOnDetection, currentTime);
+    else changeState(waitOnDetection);
     break;
   case insertValveOn:
-    if (_insertValveOnInterval < getTimeInterval(currentTime))
+    if (_insertValveOnInterval < getTimeInterval())
     {
       digitalWrite(_outPinValveInsert, LOW);
-      changeState(insertValveOff, currentTime);
+      changeState(insertValveOff);
     }
     break;  
   case insertValveOff:
-  if (_insertValveOffInterval < getTimeInterval(currentTime))
+  if (_insertValveOffInterval < getTimeInterval())
     {
       digitalWrite(_outPinValve, HIGH);
-      changeState(valveOn, currentTime);
+      changeState(valveOn);
     }
     break;  
   case valveOn:
-    if (_valveOnInterval < getTimeInterval(currentTime))
+    if (_valveOnInterval < getTimeInterval())
     {
       digitalWrite(_outPinValve, LOW);
-      changeState(valveOff, currentTime);
+      changeState(valveOff);
     }
     break;
   case valveOff:
     if (digitalRead(_inPinSensor) == HIGH)
-      changeState(tubeRemoved, currentTime);
+      changeState(tubeRemoved);
     break;
   case tubeRemoved:
-    if (_valveOffInterval < getTimeInterval(currentTime))
-      changeState(waitOnDetection, currentTime);
+    if (_valveOffInterval < getTimeInterval())
+      changeState(waitOnDetection);
     break;
   case inactive:
-    changeState(inactive, currentTime);
+    changeState(inactive);
     break; // optional
   default: // Optional
-    changeState(waitOnDetection, currentTime);
+    changeState(waitOnDetection);
   }
 }
