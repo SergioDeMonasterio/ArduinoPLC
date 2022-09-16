@@ -10,10 +10,10 @@ AirCylinderCtrlFSM
                                    outPins[0],
                                    outPins[1],
                                    300,
-                                   400,
-                                   400,
-                                   400,
-                                   400);
+                                   150,
+                                   150,
+                                   150,
+                                   200);
 
 // AirCylinderCtrlFSM
 //     crimper_2 = AirCylinderCtrlFSM(inPins[1],

@@ -1,6 +1,9 @@
 #include "air_cylinder_control.h"
 #include <Arduino.h>
 
+char *crimperStatesStr[] = {"waitOnDetection", "confirmDetection", "insertValveOn",
+                     "insertValveOff", "valveOn","valveOff","tubeRemoved","inactive" };
+
 AirCylinderCtrlFSM::AirCylinderCtrlFSM(
     uint8_t inPinSensor,
     uint8_t outPinValve,
@@ -35,19 +38,22 @@ unsigned long AirCylinderCtrlFSM::getTimeInterval(unsigned long currentTime)
   return timeInterval;
 }
 
+void AirCylinderCtrlFSM::changeState(CrimperStates nextState, unsigned long currentTime){
+  _currentState = nextState;
+  _lastChangeTime = currentTime;
+  Serial.print("State: "); Serial.println(crimperStatesStr[_currentState]);
+}
+
 void AirCylinderCtrlFSM::start(unsigned long currentTime)
 {
-  _currentState = waitOnDetection;
-  _lastChangeTime = currentTime;
   Serial.println("Air cylinder state machine STARTED!");
-  Serial.println("State: waitOnDetection");
+  changeState(waitOnDetection, currentTime);
 }
 
 void AirCylinderCtrlFSM::stop(unsigned long currentTime)
 {
-  _currentState = inactive;
-  _lastChangeTime = currentTime;
   Serial.println("Air cylinder state machine STOPPED!");
+  changeState(inactive, currentTime);
 }
 
 void AirCylinderCtrlFSM::run(unsigned long currentTime)
@@ -56,86 +62,53 @@ void AirCylinderCtrlFSM::run(unsigned long currentTime)
   switch (_currentState)
   {
   case waitOnDetection:
-    if (digitalRead(_inPinSensor) == LOW)
-    {
-      _lastChangeTime = currentTime;
-      _currentState = confirmDetection;
-      Serial.println("State: confirmDetection");
-    }
+    if (digitalRead(_inPinSensor) == LOW) changeState(confirmDetection, currentTime);
     break;
   case confirmDetection:
     if (digitalRead(_inPinSensor) == LOW)
     {
       if (_confirmTimeInterval < getTimeInterval(currentTime))
       {
-        Serial.print("Confirm time interval: ");
-        Serial.println(_confirmTimeInterval);
-        Serial.print("Current time interval: ");
-        Serial.println(getTimeInterval(currentTime));
+        Serial.print("Current time interval: "); Serial.println(getTimeInterval(currentTime));
         digitalWrite(_outPinValveInsert, HIGH);
-        _lastChangeTime = currentTime;
-        _currentState = insertValveOn;
-        Serial.println("State: insertValveOn");
+        changeState(insertValveOn, currentTime);
       }
     }
-    else
-    {
-      _currentState = waitOnDetection;
-      _lastChangeTime = currentTime;
-      Serial.println("State: waitOnDetection");
-    }
+    else changeState(waitOnDetection, currentTime);
     break;
   case insertValveOn:
     if (_insertValveOnInterval < getTimeInterval(currentTime))
     {
       digitalWrite(_outPinValveInsert, LOW);
-      _currentState = insertValveOff;
-      _lastChangeTime = currentTime;
-      Serial.println("State: insertValveOff");
+      changeState(insertValveOff, currentTime);
     }
     break;  
   case insertValveOff:
   if (_insertValveOffInterval < getTimeInterval(currentTime))
     {
       digitalWrite(_outPinValve, HIGH);
-     _currentState = valveOn;
-      _lastChangeTime = currentTime;
-      Serial.println("State: valveOn");
+      changeState(valveOn, currentTime);
     }
     break;  
   case valveOn:
     if (_valveOnInterval < getTimeInterval(currentTime))
     {
       digitalWrite(_outPinValve, LOW);
-      _currentState = valveOff;
-      _lastChangeTime = currentTime;
-      Serial.println("State: valveOff");
+      changeState(valveOff, currentTime);
     }
     break;
   case valveOff:
     if (digitalRead(_inPinSensor) == HIGH)
-    {
-      _currentState = tubeRemoved;
-      _lastChangeTime = currentTime;
-      Serial.println("State: tubeRemoved");
-    }
+      changeState(tubeRemoved, currentTime);
     break;
   case tubeRemoved:
     if (_valveOffInterval < getTimeInterval(currentTime))
-    {
-      _currentState = waitOnDetection;
-      _lastChangeTime = currentTime;
-      Serial.println("State: waitOnDetection");
-    }
+      changeState(waitOnDetection, currentTime);
     break;
   case inactive:
-    _lastChangeTime = currentTime;
-    Serial.println("State: inactive");
+    changeState(inactive, currentTime);
     break; // optional
-
-  // you can have any number of case statements.
   default: // Optional
-    _currentState = waitOnDetection;
-    Serial.println("State: waitOnDetection");
+    changeState(waitOnDetection, currentTime);
   }
 }

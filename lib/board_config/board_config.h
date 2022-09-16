@@ -14,7 +14,7 @@
 // static const uint8_t outPins[outPinQty] = {42, 41, 40, 5, 4, 3, 2, 49, 48, 47, 46, 45, 44, 43};
 
 // // -----------> End of: PLC with Mega <----------------------
-// -----------> Board Pins Config: PLC with Nano <-----------
+// // -----------> Board Pins Config: PLC with Nano <-----------
 
 // Digital Inputs
 static const uint8_t inPinQty = 4;                      // Qty of input pins

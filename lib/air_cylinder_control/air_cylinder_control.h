@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-enum AirCylinderStates
+enum CrimperStates
 {
   waitOnDetection = 0,
   confirmDetection = 1,
@@ -14,6 +14,8 @@ enum AirCylinderStates
   tubeRemoved = 6,
   inactive = 7
 };
+
+extern char *crimperStatesStr[];
 
 class AirCylinderCtrlFSM
 {
@@ -27,10 +29,11 @@ private:
   unsigned int _insertValveOffInterval;
   unsigned int _valveOnInterval;
   unsigned int _valveOffInterval;
-  AirCylinderStates _currentState;
+  CrimperStates _currentState;
 
   unsigned long getTimeInterval(unsigned long currentTime);
-
+  void changeState(CrimperStates nextState, unsigned long currentTime);
+  
 public:
   AirCylinderCtrlFSM(uint8_t inPinSensor,
                      uint8_t outPinValve,
