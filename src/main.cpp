@@ -1,25 +1,18 @@
 #include <Arduino.h>
-#include "../lib/air_cylinder_control/air_cylinder_control.h"
+#include "../lib/crimper_control/crimper_control.h"
 #include "../lib/basic_functions/basic_functions.h"
 #include "../lib/board_config/board_config.h"
 // Crimping-Tool Object Detection
 
-AirCylinderCtrlFSM
-    crimper_1 = AirCylinderCtrlFSM(inPins[0],
+CrimperCtrlFSM
+    crimper_1 = CrimperCtrlFSM(inPins[0],
                                    outPins[0],
                                    outPins[1],
                                    300,
                                    150,
                                    150,
-                                   150,
+                                   250,
                                    200);
-
-// AirCylinderCtrlFSM
-//     crimper_2 = AirCylinderCtrlFSM(inPins[1],
-//                                    outPins[1],
-//                                    300,
-//                                    500,
-//                                    1000);
 
 void setup()
 {
@@ -34,9 +27,10 @@ void setup()
 void loop()
 {
   // connect all input pins with the respective output pins
-  // for (int i = 1; i < inPinQty; i++)
+  // for (int i = 2; i < outPinQty; i++)
   // {
-  //   connectPins(inPins[i], outPins[i]);
+  //   connectPins(inPins[i], outPins[i]); 
+  //   digitalWrite(outPins[i], HIGH);
   // }
 
   crimper_1.run();

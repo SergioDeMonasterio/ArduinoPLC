@@ -1,5 +1,5 @@
-#ifndef AIR_CYLINDER_CONTROL_H
-#define AIR_CYLINDER_CONTROL_H
+#ifndef CRIMPER_CONTROL_H
+#define CRIMPER_CONTROL_H
 
 #include <Arduino.h>
 
@@ -8,21 +8,22 @@ enum CrimperStates
   waitOnDetection = 0,
   confirmDetection = 1,
   insertValveOn = 2,
-  insertValveOff = 3,
-  valveOn = 4,
-  valveOff = 5,
-  tubeRemoved = 6,
-  inactive = 7
+  crimpValveOn = 3,
+  crimpValveOff = 4,
+  insertValveOff = 5,
+  confirmRemoval = 6,
+  tubeRemoved = 7,
+  inactive = 8
 };
 
 extern char *crimperStatesStr[];
 
-class AirCylinderCtrlFSM
+class CrimperCtrlFSM
 {
 private:
-  uint8_t _inPinSensor;
-  uint8_t _outPinValve;
-  uint8_t _outPinValveInsert;
+  uint8_t _inPinCrimperSensor;
+  uint8_t _outPinCrimpValve;
+  uint8_t _outPinInsertValve;
   unsigned long _lastChangeTime;
   unsigned int _confirmTimeInterval;
   unsigned int _insertValveOnInterval;
@@ -35,7 +36,7 @@ private:
   void changeState(CrimperStates nextState);
   
 public:
-  AirCylinderCtrlFSM(uint8_t inPinSensor,
+  CrimperCtrlFSM(uint8_t inPinSensor,
                      uint8_t outPinValve,
                      uint8_t outPinValve_Insert,
                      unsigned int confirmTimeInterval,
