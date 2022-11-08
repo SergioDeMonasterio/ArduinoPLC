@@ -14,14 +14,14 @@ char *tubeFeederStatesStr[] = {"feederWaitOnDetection",
 
 TubeFeederCtrlFSM::TubeFeederCtrlFSM(
     uint8_t inPinTubeFeederSensor,
-    uint8_t outPinTubeFeederValve,
-    uint8_t outPinLiftingValve,
-    uint8_t outPinHorMovingValve)
+    uint8_t outPinTubeFeederArm,
+    uint8_t outPinLifter,
+    uint8_t outPinHorMover)
 {
   _inPinTubeFeederSensor = inPinTubeFeederSensor;
-  _outPinTubeFeederArm = outPinTubeFeederValve;
-  _outPinLifter = outPinLiftingValve;
-  _outPinHorMover = outPinHorMovingValve;
+  _outPinTubeFeederArm = outPinTubeFeederArm;
+  _outPinLifter = outPinLifter;
+  _outPinHorMover = outPinHorMover;
 
   _currentState = feederInactive;
 }
@@ -103,9 +103,10 @@ void TubeFeederCtrlFSM::run()
     }
     break;
   case moveTubeToInitPos:
-    if (getTimeInterval() > FEEDER_HOR_MOVING_TUBE_TIME_MS)
-      digitalWrite(_outPinTubeFeederArm, FEEDER_ARM_MOVE_OUT);
-    changeState(waitOnTubeFromFeeder);
+    digitalWrite(_outPinTubeFeederArm, FEEDER_ARM_MOVE_IN);
+    digitalWrite(_outPinHorMover, FEEDER_HORIZONTAL_INIT_POS);
+    digitalWrite(_outPinLifter, FEEDER_DOWN_TUBE);
+    if (getTimeInterval() > FEEDER_HOR_MOVING_TUBE_TIME_MS) changeState(waitOnTubeFromFeeder);
     break;
   case waitOnTubeFromFeeder:
     changeState(feederWaitOnDetection);

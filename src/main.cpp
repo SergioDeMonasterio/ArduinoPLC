@@ -42,4 +42,13 @@ void loop()
 
   crimper_1.run();
   tubeFeeder.run();
+
+  // // TEST: Air Valves 
+  // if (digitalRead(inPins[1]) == LOW) digitalWrite(outPins[3], FEEDER_LIFT_TUBE);
+  // else digitalWrite(outPins[3], FEEDER_DOWN_TUBE);
+  // // ----> TETS: Feeder Init Position <-----
+  // digitalWrite(outPins[2], FEEDER_ARM_MOVE_IN);
+  // digitalWrite(outPins[3], FEEDER_DOWN_TUBE);
+  // digitalWrite(outPins[4], FEEDER_HORIZONTAL_INIT_POS);
+  // // ----> END TETS: Feeder Init Position <-----
 }
