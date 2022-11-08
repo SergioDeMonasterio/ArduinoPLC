@@ -1,0 +1,19 @@
+
+// -----> Tube Feeding System <-----
+
+// Timing Constants
+#define FEEDER_CONFIRM_TUBE_DETECTION_TIME_MS 200
+#define FEEDER_ARM_GETTING_TUBE_TIME_MS 1000
+#define FEEDER_LIFTING_TUBE_TIME_MS 500
+#define FEEDER_HOR_MOVING_TUBE_TIME_MS 1500
+#define FEEDER_DOWN_TUBE_TIME_MS 500
+
+// Air Cylinder Switches Constants
+#define FEEDER_DOWN_TUBE 0
+#define FEEDER_LIFT_TUBE not FEEDER_DOWN_TUBE
+#define FEEDER_ARM_MOVE_IN 0
+#define FEEDER_ARM_MOVE_OUT not FEEDER_ARM_MOVE_IN
+#define FEEDER_HORIZONTAL_INIT_POS 0
+#define FEEDER_HORIZONTAL_OUT_POS not FEEDER_HORIZONTAL_INIT_POS
+
+// -----> End: Tube Feeding System <-----

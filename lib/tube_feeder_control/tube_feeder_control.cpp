@@ -1,15 +1,15 @@
-#include "tube_feeder_control.h"
-#include "../board_config/time_constants.h"
 #include <Arduino.h>
+#include "tube_feeder_control.h"
+#include "../board_config/system_constants.h"
 
 char *tubeFeederStatesStr[] = {"feederWaitOnDetection",
                                "confirmTubeDetection",
-                               "getTube",
+                               "getTubeFromFeeder",
                                "liftTube",
-                               "moveTube",
-                               "releaseTube",
+                               "moveTubeToOuterPos",
+                               "downTube",
                                "moveToInitPos",
-                               "waitOnTube",
+                               "waitOnTubeFromFeeder",
                                "feederInactive"};
 
 TubeFeederCtrlFSM::TubeFeederCtrlFSM(
@@ -19,9 +19,9 @@ TubeFeederCtrlFSM::TubeFeederCtrlFSM(
     uint8_t outPinHorMovingValve)
 {
   _inPinTubeFeederSensor = inPinTubeFeederSensor;
-  _outPinTubeFeederValve = outPinTubeFeederValve;
-  _outPinLiftingValve = outPinLiftingValve;
-  _outPinHorMovingValve = outPinHorMovingValve;
+  _outPinTubeFeederArm = outPinTubeFeederValve;
+  _outPinLifter = outPinLiftingValve;
+  _outPinHorMover = outPinHorMovingValve;
 
   _currentState = feederInactive;
 }
@@ -43,7 +43,7 @@ void TubeFeederCtrlFSM::changeState(TubeFeederStates nextState)
 void TubeFeederCtrlFSM::start()
 {
   Serial.println("Tube feeder STARTED!");
-  changeState(moveToInitPos);
+  changeState(moveTubeToInitPos);
 }
 
 void TubeFeederCtrlFSM::stop()
@@ -64,52 +64,50 @@ void TubeFeederCtrlFSM::run()
   case confirmTubeDetection:
     if (digitalRead(_inPinTubeFeederSensor) == LOW)
     {
-      if (getTimeInterval() > CONFIRM_TUBE_DETECTION_TIME_MS)
+      if (getTimeInterval() > FEEDER_CONFIRM_TUBE_DETECTION_TIME_MS)
       {
-        digitalWrite(_outPinTubeFeederValve, HIGH);
-        changeState(getTube);
+        digitalWrite(_outPinTubeFeederArm, FEEDER_ARM_MOVE_OUT);
+        changeState(getTubeFromFeeder);
       }
     }
     else
       changeState(feederWaitOnDetection);
     break;
-  case getTube:
-    if (getTimeInterval() > GETTING_TUBE_TIME_MS)
+  case getTubeFromFeeder:
+    if (getTimeInterval() > FEEDER_ARM_GETTING_TUBE_TIME_MS)
     {
-      digitalWrite(_outPinLiftingValve, HIGH);
+      digitalWrite(_outPinLifter, FEEDER_LIFT_TUBE);
       changeState(liftTube);
     }
     break;
   case liftTube:
-    if (getTimeInterval() > LIFTING_TUBE_TIME_MS)
+    if (getTimeInterval() > FEEDER_LIFTING_TUBE_TIME_MS)
     {
-      digitalWrite(_outPinHorMovingValve, HIGH);
-      changeState(moveTube);
+      digitalWrite(_outPinHorMover, FEEDER_HORIZONTAL_OUT_POS);
+      changeState(moveTubeToOuterPos);
     }
     break;
-  case moveTube:
-    if (getTimeInterval() > MOVING_TUBE_TIME_MS)
+  case moveTubeToOuterPos:
+    if (getTimeInterval() > FEEDER_HOR_MOVING_TUBE_TIME_MS)
     {
-      digitalWrite(_outPinLiftingValve, LOW);
-      digitalWrite(_outPinTubeFeederValve, LOW);
-      changeState(releaseTube);
+      digitalWrite(_outPinLifter, FEEDER_DOWN_TUBE);
+      digitalWrite(_outPinTubeFeederArm, FEEDER_ARM_MOVE_IN);
+      changeState(downTube);
     }
     break;
-  case releaseTube:
-    if (getTimeInterval() > RELEASING_TUBE_TIME_MS)
+  case downTube:
+    if (getTimeInterval() > FEEDER_DOWN_TUBE_TIME_MS)
     {
-      digitalWrite(_outPinHorMovingValve, LOW);
-      changeState(moveToInitPos);
+      digitalWrite(_outPinHorMover, FEEDER_HORIZONTAL_INIT_POS);
+      changeState(moveTubeToInitPos);
     }
     break;
-  case moveToInitPos:
-    digitalWrite(_outPinTubeFeederValve, LOW);
-    digitalWrite(_outPinTubeFeederValve, LOW);
-    digitalWrite(_outPinHorMovingValve, LOW);
-    if (getTimeInterval() > MOVING_TUBE_TIME_MS)
-      changeState(waitOnTube);
+  case moveTubeToInitPos:
+    if (getTimeInterval() > FEEDER_HOR_MOVING_TUBE_TIME_MS)
+      digitalWrite(_outPinTubeFeederArm, FEEDER_ARM_MOVE_OUT);
+    changeState(waitOnTubeFromFeeder);
     break;
-  case waitOnTube:
+  case waitOnTubeFromFeeder:
     changeState(feederWaitOnDetection);
     break;
   case feederInactive:

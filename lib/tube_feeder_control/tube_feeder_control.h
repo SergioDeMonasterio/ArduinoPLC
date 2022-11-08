@@ -7,12 +7,12 @@ enum TubeFeederStates
 {
   feederWaitOnDetection = 0,
   confirmTubeDetection = 1,
-  getTube = 2,
+  getTubeFromFeeder = 2,
   liftTube = 3,
-  moveTube = 4,
-  releaseTube = 5,
-  moveToInitPos = 6,
-  waitOnTube = 7,
+  moveTubeToOuterPos = 4,
+  downTube = 5,
+  moveTubeToInitPos = 6,
+  waitOnTubeFromFeeder = 7,
   feederInactive = 8
 };
 
@@ -22,9 +22,9 @@ class TubeFeederCtrlFSM
 {
 private:
   uint8_t _inPinTubeFeederSensor;
-  uint8_t _outPinTubeFeederValve;
-  uint8_t _outPinLiftingValve;
-  uint8_t _outPinHorMovingValve;
+  uint8_t _outPinTubeFeederArm;
+  uint8_t _outPinLifter;
+  uint8_t _outPinHorMover;
   unsigned long _lastChangeTime;
   TubeFeederStates _currentState;
 
@@ -33,9 +33,9 @@ private:
 
 public:
   TubeFeederCtrlFSM(uint8_t inPinTubeFeederSensor,
-                    uint8_t outPinTubeFeederValve,
-                    uint8_t outPinLiftingValve,
-                    uint8_t outPinHorMovingValve);
+                    uint8_t outPinTubeFeederArm,
+                    uint8_t outPinLifter,
+                    uint8_t outPinHorMover);
   void start();
   void stop();
   void run();
