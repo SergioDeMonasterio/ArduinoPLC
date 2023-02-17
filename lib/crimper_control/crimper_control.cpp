@@ -1,48 +1,67 @@
 #include "crimper_control.h"
 #include <Arduino.h>
+#include "../basic_functions/basic_functions.h"
 
-char *crimperStatesStr[] = {"waitOnDetection",
+
+char *crimperStatesStr[] = {"initState",
+                            "waitOnDetection",
                             "confirmDetection",
-                            "insertValveOn",
+                            "plugTipFeederValveOn",
+                            "tubeInsertValveOn",
                             "crimpValveOn",
                             "crimpValveOff",
-                            "insertValveOff",
+                            "insertValvesOff",
                             "confirmRemoval",
-                            "tubeRemoved",
-                            "inactive"};
+                            "tubeRemoved"};
 
 CrimperCtrlFSM::CrimperCtrlFSM(
     uint8_t inPinCrimperSensor,
-    uint8_t outPinValve,
-    uint8_t outPinValveInsert,
+    uint8_t sensorDetectsOn,
+    uint8_t outPinCrimperValve,
+    uint8_t outPinInsertValve,
+    uint8_t outPinPTFeederValve,
+    
+    boolean crimpingSwitch,
+
     unsigned int confirmTimeInterval,
-    unsigned int insertValveOnInterval,
-    unsigned int insertValveOffInterval,
-    unsigned int valveOnInterval,
-    unsigned int valveOffInterval)
+    unsigned int insertValveOnDelay,
+    unsigned int crimperValveOnDelay,
+    unsigned int crimperValveOffDelay,
+    unsigned int insertValveOffDelay)
 {
   _inPinCrimperSensor = inPinCrimperSensor;
-  _outPinCrimpValve = outPinValve;
-  _outPinInsertValve = outPinValveInsert;
+  _sensorDetectsOn    = sensorDetectsOn;
+  _outPinCrimperValve = outPinCrimperValve;
+  _outPinInsertValve = outPinInsertValve;
+  _outPinPTFeederValve = outPinPTFeederValve;
+
+  _crimpingSwitch = crimpingSwitch;
 
   _confirmTimeInterval = confirmTimeInterval;
-  _valveOnInterval = valveOnInterval;
-  _valveOffInterval = valveOffInterval;
-  _insertValveOnInterval = insertValveOnInterval;
-  _insertValveOffInterval = insertValveOffInterval;
+  _insertValveOnDelay = insertValveOnDelay;
+  _crimperValveOnDelay = crimperValveOnDelay;
+  _crimperValveOffDelay = crimperValveOffDelay;
+  _insertValveOffDelay = insertValveOffDelay;
 
-  _currentState = inactive;
+  _currentState = initState;
+}
 
-  Serial.print("Input Pin: ");
-  Serial.println(inPinCrimperSensor);
-  Serial.print("Output Pin: ");
-  Serial.println(outPinValve);
+boolean CrimperCtrlFSM::tubeIsDetected(){
+  return objDetected(_inPinCrimperSensor,_sensorDetectsOn);
+}
+
+boolean CrimperCtrlFSM::tubeIsRemoved(){
+  return not objDetected(_inPinCrimperSensor,_sensorDetectsOn);
 }
 
 unsigned long CrimperCtrlFSM::getTimeInterval()
 {
   unsigned long timeInterval = millis() - _lastChangeTime;
   return timeInterval;
+}
+
+boolean CrimperCtrlFSM::timeElapsed(unsigned int time){
+  return getTimeInterval() > time;
 }
 
 void CrimperCtrlFSM::changeState(CrimperStates nextState)
@@ -62,73 +81,88 @@ void CrimperCtrlFSM::start()
 void CrimperCtrlFSM::stop()
 {
   Serial.println("Air cylinder state machine STOPPED!");
-  changeState(inactive);
+  changeState(initState);
 }
 
 void CrimperCtrlFSM::run()
 {
-
   switch (_currentState)
   {
+  case initState:
+    digitalWrite(_outPinPTFeederValve, LOW);
+    digitalWrite(_outPinCrimperValve, LOW);
+    digitalWrite(_outPinInsertValve, LOW);
+    break;
   case waitOnDetection:
-    if (digitalRead(_inPinCrimperSensor) == LOW)
+    if (tubeIsDetected())
       changeState(confirmDetection);
     break;
   case confirmDetection:
-    if (digitalRead(_inPinCrimperSensor) == LOW)
+    if (tubeIsDetected())
     {
-      if (_confirmTimeInterval < getTimeInterval())
+      if (timeElapsed(_confirmTimeInterval)) 
       {
-        Serial.print("Current time interval: ");
-        Serial.println(getTimeInterval());
-        digitalWrite(_outPinInsertValve, HIGH);
-        changeState(insertValveOn);
+        digitalWrite(_outPinPTFeederValve, HIGH);
+        changeState(plugTipFeederValveOn);
       }
     }
     else
       changeState(waitOnDetection);
     break;
-  case insertValveOn:
-    if (_insertValveOnInterval < getTimeInterval())
+  case plugTipFeederValveOn:
+    if (timeElapsed(_insertValveOnDelay))
     {
-      digitalWrite(_outPinCrimpValve, HIGH);
-      changeState(crimpValveOn);
+      digitalWrite(_outPinInsertValve, HIGH);
+      changeState(tubeInsertValveOn);
+    }
+    break;
+  case tubeInsertValveOn:
+       if (timeElapsed(_crimperValveOnDelay))
+    {
+      
+      if (_crimpingSwitch) {
+        digitalWrite(_outPinCrimperValve, HIGH);
+        changeState(crimpValveOn);
+      }
+      else {
+           digitalWrite(_outPinInsertValve, LOW);
+           digitalWrite(_outPinPTFeederValve, LOW);
+           changeState(insertValvesOff);
+      }
     }
     break;
   case crimpValveOn:
-    if (_valveOnInterval < getTimeInterval())
+    if (timeElapsed(_crimperValveOffDelay))
     {
-      digitalWrite(_outPinCrimpValve, LOW);
+      digitalWrite(_outPinCrimperValve, LOW);
       changeState(crimpValveOff);
     }
     break;
   case crimpValveOff:
-    if (_insertValveOffInterval < getTimeInterval()) 
+    if (timeElapsed(_insertValveOffDelay)) 
     {
       digitalWrite(_outPinInsertValve, LOW);
-      changeState(insertValveOff);
+      digitalWrite(_outPinPTFeederValve, LOW);
+      changeState(insertValvesOff);
     }
     break;
-  case insertValveOff:
-    if (digitalRead(_inPinCrimperSensor) == HIGH)
+  case insertValvesOff:
+    if (tubeIsRemoved()){
       changeState(confirmRemoval);
+    }
     break;
   case confirmRemoval:
-    if (digitalRead(_inPinCrimperSensor) == HIGH)
-    {
-      if (_confirmTimeInterval < getTimeInterval())
+    if (tubeIsRemoved()) {
+       if (timeElapsed(_confirmTimeInterval)){
         changeState(tubeRemoved);
-    }
+      } 
+    }  
     else
-      changeState(insertValveOff);
+      changeState(confirmRemoval);
     break;  
   case tubeRemoved:
-    if (_valveOffInterval < getTimeInterval())
       changeState(waitOnDetection);
-    break;
-  case inactive:
-    changeState(inactive);
-    break;
+      break;
   default:
     changeState(waitOnDetection);
   }
