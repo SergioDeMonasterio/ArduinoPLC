@@ -100,46 +100,33 @@ void PT78_InsertCtrlFSM::run()
   case confirmDetectionPT78Insert:
     if (tubeIsDetected())
     {
-      if (timeElapsed(_confirmTimeInterval)) 
-      {
-        digitalWrite(_outPinTubeHoldValve, HIGH);
-        changeState(holdTubeValveOnPT78Insert);
-      }
+      if (timeElapsed(_confirmTimeInterval)) changeState(plugTipFeederValveOnPT78Insert);
     }
     else
       changeState(waitOnDetectionPT78Insert);
     break;
   case holdTubeValveOnPT78Insert:
-    if (timeElapsed(_holdTubeValveOnDelay))
-    {
-      digitalWrite(_outPinPTFeederValve, HIGH);
-      changeState(plugTipFeederValveOnPT78Insert);
-    }
-    break;
+    digitalWrite(_outPinTubeHoldValve, HIGH);
+    if (timeElapsed(_holdTubeValveOnDelay)) changeState(plugTipFeederValveOnPT78Insert);
     break;
   case plugTipFeederValveOnPT78Insert:
-    if (timeElapsed(_insertValveOnDelay))
-    {
-      digitalWrite(_outPinInsertValve, HIGH);
-      changeState(tubeInsertValveOnPT78Insert);
-    }
+    digitalWrite(_outPinPTFeederValve, HIGH);
+    if (timeElapsed(_insertValveOnDelay)) changeState(tubeInsertValveOnPT78Insert);
     break;
   case tubeInsertValveOnPT78Insert:
-       if (timeElapsed(_holdTubeValveOnDelay))
-    {
-           digitalWrite(_outPinInsertValve, LOW);
-           changeState(holdTubeValveOffPT78Insert);
-    }
+       digitalWrite(_outPinInsertValve, HIGH);
+       if (timeElapsed(_holdTubeValveOnDelay)) changeState(tubeInsertValveOffPT78Insert);
     break;
   case holdTubeValveOffPT78Insert:
        if (timeElapsed(_holdTubeValveOffDelay))
        {
            digitalWrite(_outPinTubeHoldValve, LOW);
-           digitalWrite(_outPinPTFeederValve, LOW);
            changeState(tubeInsertValveOffPT78Insert);
        }
        break;
   case tubeInsertValveOffPT78Insert:
+    digitalWrite(_outPinInsertValve, LOW);
+    digitalWrite(_outPinPTFeederValve, LOW);
     if (tubeIsRemoved()){
       changeState(confirmRemovalPT78Insert);
     }

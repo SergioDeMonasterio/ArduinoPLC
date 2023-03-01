@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "tube_feeder_control.h"
 #include "../board_config/system_constants.h"
+#include "../basic_functions/basic_functions.h"
 
 char *tubeFeederStatesStr[] = {"feederWaitOnDetection",
                                "confirmTubeDetection",
@@ -14,16 +15,24 @@ char *tubeFeederStatesStr[] = {"feederWaitOnDetection",
 
 TubeFeederCtrlFSM::TubeFeederCtrlFSM(
     uint8_t inPinTubeFeederSensor,
+    uint8_t sensorDetectsOn,
+    uint8_t inPinBreaker,
     uint8_t outPinTubeFeederArm,
     uint8_t outPinLifter,
     uint8_t outPinHorMover)
 {
   _inPinTubeFeederSensor = inPinTubeFeederSensor;
+  _sensorDetectsOn    = sensorDetectsOn;
+  _inPinBreaker = inPinBreaker;
   _outPinTubeFeederArm = outPinTubeFeederArm;
   _outPinLifter = outPinLifter;
   _outPinHorMover = outPinHorMover;
 
   _currentState = feederInactive;
+}
+
+boolean TubeFeederCtrlFSM::tubeIsDetected(){
+  return objDetected(_inPinTubeFeederSensor,_sensorDetectsOn);
 }
 
 unsigned long TubeFeederCtrlFSM::getTimeInterval()
@@ -58,11 +67,11 @@ void TubeFeederCtrlFSM::run()
   switch (_currentState)
   {
   case feederWaitOnDetection:
-    if (digitalRead(_inPinTubeFeederSensor) == LOW)
+    if (tubeIsDetected())
       changeState(confirmTubeDetection);
     break;
   case confirmTubeDetection:
-    if (digitalRead(_inPinTubeFeederSensor) == LOW)
+    if (tubeIsDetected())
     {
       if (getTimeInterval() > FEEDER_CONFIRM_TUBE_DETECTION_TIME_MS)
       {
@@ -117,4 +126,9 @@ void TubeFeederCtrlFSM::run()
   default:
     changeState(feederWaitOnDetection);
   }
+
+  if ( digitalRead(_inPinBreaker) == HIGH ){
+    changeState(feederWaitOnDetection);
+    Serial.println("Breaker activated !!!!!");
+    }
 }

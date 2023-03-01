@@ -22,17 +22,22 @@ class TubeFeederCtrlFSM
 {
 private:
   uint8_t _inPinTubeFeederSensor;
+  uint8_t _sensorDetectsOn;
+  uint8_t _inPinBreaker;
   uint8_t _outPinTubeFeederArm;
   uint8_t _outPinLifter;
   uint8_t _outPinHorMover;
   unsigned long _lastChangeTime;
   TubeFeederStates _currentState;
 
+  boolean tubeIsDetected();
   unsigned long getTimeInterval();
   void changeState(TubeFeederStates nextState);
 
 public:
   TubeFeederCtrlFSM(uint8_t inPinTubeFeederSensor,
+                    uint8_t sensorDetectsOn,
+                    uint8_t inPinBreaker,
                     uint8_t outPinTubeFeederArm,
                     uint8_t outPinLifter,
                     uint8_t outPinHorMover);

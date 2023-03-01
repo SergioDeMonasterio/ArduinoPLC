@@ -6,49 +6,40 @@
 #include "../lib/pt78_insert_control/pt78_insert_control.h"
 #include "../lib/tube_feeder_control/tube_feeder_control.h"
 
-// CrimperCtrlFSM
-//     crimper_1 = CrimperCtrlFSM(inPins[0],     // Inductive sensor pin
-//                                LOW,           // Sensor Detects = LOW
-//                                outPins[0],    // crimper valve pin
-//                                outPins[1],    // tube insert valve pin
-//                                outPins[2],    // plug tip feeder valve pin
-//                                false,         // Crimping operation active = true/false
-//                                250,           // Sensor confirmation time interval
-//                                550,           // Insert valve on delay
-//                                250,           // Crimper valve on delay
-//                                250,           // Crimper valve off delay
-//                                300);          // Insert valve off delay
 
-// CrimperCtrlFSM
-//     crimper_2 = CrimperCtrlFSM(inPins[1],     // Inductive sensor pin
-//                                HIGH,           // Sensor Detects = LOW
-//                                outPins[3],    // crimper valve pin
-//                                outPins[4],    // tube insert valve pin
-//                                outPins[5],    // plug tip feeder valve pin
-//                                true,         // Crimping operation active = true/false
-//                                250,           // Sensor confirmation time interval
-//                                550,           // Insert valve on delay
-//                                250,           // Crimper valve on delay
-//                                250,           // Crimper valve off delay
-//                                300);          // Insert valve off delay
-
-TubeFeederCtrlFSM tubeFeeder = TubeFeederCtrlFSM(inPins[0],
-                                                 outPins[0],
-                                                 outPins[1],
-                                                 outPins[2]);
+TubeFeederCtrlFSM tubeFeeder = TubeFeederCtrlFSM(inPins[0],   // Sensor de la caja con tubos: Todavia hay tubos en la caja?
+                                                 HIGH,        // / Sensor Detects = HIGH
+                                                 inPins[3],   // Tube feeder breaker!!     
+                                                 outPins[0],  // Cilindro que saca tubo por tubo de la caja
+                                                 outPins[1],  // Cilindro que levanta los tubos
+                                                 outPins[2]); // Cilindro largo que mueve los tubos horizontal
 
 PT78_InsertCtrlFSM
-    pt78_inserter = PT78_InsertCtrlFSM(inPins[1],     // Inductive sensor pin
-                               LOW,           // Sensor Detects = LOW
-                               outPins[3],    // crimper valve pin
-                               outPins[4],    // tube insert valve pin
-                               outPins[5],    // plug tip feeder valve pin
+    pt78_inserter = PT78_InsertCtrlFSM(inPins[1],     // Sensor inductivo donde se insertan los plasticos de 7/8"
+                               LOW,                   // Sensor Detects = LOW
+                               outPins[3],            // Cilindro que remacha / crimper valve pin
+                               outPins[4],            // Cilindro que mueve el tubo / tube insert valve pin
+                               outPins[5],            // Cilindro que inserta los plug tips / plug tip feeder valve pin
                                true,         // Crimping operation active = true/false
-                               400,           // Sensor confirmation time interval
-                               450,           // Insert valve on delay
+                               300,           // Sensor confirmation time interval
+                               350,           // Insert valve on delay
                                250,           // Crimper valve on delay
-                               550,           // Crimper valve off delay
+                               450,           // Crimper valve off delay
                                300);          // Insert valve off delay
+
+CrimperCtrlFSM
+    crimper_34 = CrimperCtrlFSM(inPins[2],     // Inductive sensor pin
+                               HIGH,           // Sensor Detects = HIGH
+                               outPins[6],    // Piston para remachar / crimper valve pin
+                               outPins[7],    // Piston para mover el tubo /  tube insert valve pin
+                               outPins[8],    // Piston para insertar el plug tip / plug tip feeder valve pin
+                               true,         // Crimping operation active = true/false
+                               250,           // Sensor confirmation time interval
+                               550,           // Insert valve on delay
+                               250,           // Crimper valve on delay
+                               250,           // Crimper valve off delay
+                               300);          // Insert valve off delay
+
 
 void setup()
 {
@@ -60,21 +51,18 @@ void setup()
   #endif
   configAllPins();
   delay(1000);
-  // crimper_1.start();
-  // crimper_2.start();
+  
   pt78_inserter.start();
   tubeFeeder.start();
+  crimper_34.start();
 }
 
 void loop()
 {
 
-
-  // crimper_1.run();
-  // crimper_2.run();
   pt78_inserter.run();
   tubeFeeder.run();
-
+  crimper_34.run();
 
   // ------> TESTs <--------
   //// ---> Test 1
