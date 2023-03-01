@@ -44,11 +44,11 @@ CrimperCtrlFSM
 void setup()
 {
   Serial.begin(9600);
-  #if BOARD_CHOICE == 1
-    Serial.println("Arduino NANO Board in use");
-  #elif BOARD_CHOICE == 2
-    Serial.println("Arduino MEGA Board in use");
-  #endif
+#if BOARD_CHOICE == 1
+  Serial.println("Arduino NANO Board in use");
+#elif BOARD_CHOICE == 2
+  Serial.println("Arduino MEGA Board in use");
+#endif
   configAllPins();
   delay(1000);
   
@@ -73,7 +73,7 @@ void loop()
   //   digitalWrite(outPins[i], HIGH);
   // }
   //// ---> End: Test 1
-  // // TEST 2: Air Valves 
+  // // TEST 2: Air Valves
   // if (digitalRead(inPins[1]) == LOW) digitalWrite(outPins[3], FEEDER_LIFT_TUBE);
   // else digitalWrite(outPins[3], FEEDER_DOWN_TUBE);
   // // ----> TETS: Feeder Init Position <-----
