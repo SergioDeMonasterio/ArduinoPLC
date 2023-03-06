@@ -8,7 +8,7 @@ enum CrimperStates
   initState = 0,
   waitOnDetection = 1,
   confirmDetection = 2,
-  plugTipFeederValveOn =3,
+  plugTipFeederValveOn = 3,
   tubeInsertValveOn = 4,
   crimpValveOn = 5,
   crimpValveOff = 6,
@@ -38,28 +38,27 @@ private:
   unsigned int _insertValveOffDelay;
 
   CrimperStates _currentState;
-  
+
   boolean tubeIsDetected();
   boolean tubeIsRemoved();
   unsigned long getTimeInterval();
   boolean timeElapsed(unsigned int time);
   void changeState(CrimperStates nextState);
 
-
 public:
-  CrimperCtrlFSM(    uint8_t inPinCrimperSensor,
-                     uint8_t sensorDetectsOn,
-                     uint8_t outPinCrimperValve,
-                     uint8_t outPinInsertValve,
-                     uint8_t outPinPTFeederValve,
+  CrimperCtrlFSM(uint8_t inPinCrimperSensor,
+                 uint8_t sensorDetectsOn,
+                 uint8_t outPinCrimperValve,
+                 uint8_t outPinInsertValve,
+                 uint8_t outPinPTFeederValve,
 
-                     boolean crimpingSwitch,
+                 boolean crimpingSwitch,
 
-                     unsigned int confirmTimeInterval,
-                     unsigned int insertValveOnDelay,
-                     unsigned int crimperValveOnDelay,
-                     unsigned int crimperValveOffDelay,
-                     unsigned int insertValveOffDelay);
+                 unsigned int confirmTimeInterval,
+                 unsigned int insertValveOnDelay,
+                 unsigned int crimperValveOnDelay,
+                 unsigned int crimperValveOffDelay,
+                 unsigned int insertValveOffDelay);
   void start();
   void stop();
   void run();

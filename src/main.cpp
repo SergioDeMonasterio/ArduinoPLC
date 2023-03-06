@@ -3,43 +3,65 @@
 #include "../lib/board_config/system_constants.h"
 #include "../lib/basic_functions/basic_functions.h"
 #include "../lib/crimper_control/crimper_control.h"
-#include "../lib/pt78_insert_control/pt78_insert_control.h"
-#include "../lib/tube_feeder_control/tube_feeder_control.h"
+#include "../lib/simple_actuator_control/simple_actuator_control.h"
 
+// #include "../lib/pt78_insert_control/pt78_insert_control.h"
+// #include "../lib/tube_feeder_control/tube_feeder_control.h"
 
-TubeFeederCtrlFSM tubeFeeder = TubeFeederCtrlFSM(inPins[0],   // Sensor de la caja con tubos: Todavia hay tubos en la caja?
-                                                 HIGH,        // / Sensor Detects = HIGH
-                                                 inPins[3],   // Tube feeder breaker!!     
-                                                 outPins[0],  // Cilindro que saca tubo por tubo de la caja
-                                                 outPins[1],  // Cilindro que levanta los tubos
-                                                 outPins[2]); // Cilindro largo que mueve los tubos horizontal
+// TubeFeederCtrlFSM tubeFeeder = TubeFeederCtrlFSM(inPins[0],   // Sensor de la caja con tubos: Todavia hay tubos en la caja?
+//                                                  HIGH,        // / Sensor Detects = HIGH
+//                                                  inPins[3],   // Tube feeder breaker!!
+//                                                  outPins[0],  // Cilindro que saca tubo por tubo de la caja
+//                                                  outPins[1],  // Cilindro que levanta los tubos
+//                                                  outPins[2]); // Cilindro largo que mueve los tubos horizontal
 
-PT78_InsertCtrlFSM
-    pt78_inserter = PT78_InsertCtrlFSM(inPins[1],     // Sensor inductivo donde se insertan los plasticos de 7/8"
-                               LOW,                   // Sensor Detects = LOW
-                               outPins[3],            // Cilindro que remacha / crimper valve pin
-                               outPins[4],            // Cilindro que mueve el tubo / tube insert valve pin
-                               outPins[5],            // Cilindro que inserta los plug tips / plug tip feeder valve pin
-                               true,         // Crimping operation active = true/false
-                               300,           // Sensor confirmation time interval
-                               350,           // Insert valve on delay
-                               250,           // Crimper valve on delay
-                               450,           // Crimper valve off delay
-                               300);          // Insert valve off delay
+// PT78_InsertCtrlFSM
+//     pt78_inserter = PT78_InsertCtrlFSM(inPins[1],     // Sensor inductivo donde se insertan los plasticos de 7/8"
+//                                LOW,                   // Sensor Detects = LOW
+//                                outPins[3],            // Cilindro que remacha / crimper valve pin
+//                                outPins[4],            // Cilindro que mueve el tubo / tube insert valve pin
+//                                outPins[5],            // Cilindro que inserta los plug tips / plug tip feeder valve pin
+//                                true,          // Crimping operation active = true/false
+//                                300,           // Sensor confirmation time interval
+//                                350,           // Insert valve on delay
+//                                250,           // Crimper valve on delay
+//                                450,           // Crimper valve off delay
+//                                300);          // Insert valve off delay
+
+// -------------------< 3/4" Crimper >------------------------------------------------------------------------
+// 1. actuatorPinsAndTimes:
+// {On/Off, BoardPins, startActTimes, stopActTimes} ENGLISH           / ESPAÑOL
+// {TRUE,   outPin[2], _|----------------------|_ } PT Feeder valve   / Piston para insertar el plug tip
+// {TRUE,   outPin[1], _______|----------------|_ } Tube Insert valve / Piston para mover el tubo
+// {TRUE,   outPin[0], _____________|----|_______ } Crimping valve    / Piston para remachar
+//                      |     |     |    |     |
+//                  -------------------------------> t, [ms]
+//                      1    550   800  1050  1350
+actuatorPinsAndTimes crimper_34_PinsAndSwitchTimes[] = {{true, outPins[2], 1, 1350},         // PT Feeder valve
+                                                        {true, outPins[1], 550, 1350},       // Tube Insert valve
+                                                        {true, outPins[0], 800, 1050}};      // Crimping valve
+SimpleActuatorControl crimper_34_new = SimpleActuatorControl("3/4 Crimper NEW",              // Unit name
+                                                             true,                           // Sensor driven operation
+                                                             inPins[0],                      // Sensor input pin
+                                                             HIGH,                           // Sensor active on HIGH
+                                                             250,                            // Detecton debounce time
+                                                             1400,                           // Total cycle time
+                                                             3,                              // Number of actuators / cylinders
+                                                             crimper_34_PinsAndSwitchTimes); // Timing matrix
+// -------------------< End of: 3/4" Crimper  >---------------------------------------------------------------
 
 CrimperCtrlFSM
-    crimper_34 = CrimperCtrlFSM(inPins[2],     // Inductive sensor pin
-                               HIGH,           // Sensor Detects = HIGH
-                               outPins[6],    // Piston para remachar / crimper valve pin
-                               outPins[7],    // Piston para mover el tubo /  tube insert valve pin
-                               outPins[8],    // Piston para insertar el plug tip / plug tip feeder valve pin
-                               true,         // Crimping operation active = true/false
-                               250,           // Sensor confirmation time interval
-                               550,           // Insert valve on delay
-                               250,           // Crimper valve on delay
-                               250,           // Crimper valve off delay
-                               300);          // Insert valve off delay
-
+    crimper_34 = CrimperCtrlFSM(inPins[2],  // Inductive sensor pin
+                                HIGH,       // Sensor Detects = HIGH
+                                outPins[3], // Piston para remachar / crimper valve pin
+                                outPins[4], // Piston para mover el tubo /  tube insert valve pin
+                                outPins[5], // Piston para insertar el plug tip / plug tip feeder valve pin
+                                true,       // Crimping operation active = true/false
+                                250,        // Sensor confirmation time interval
+                                550,        // Insert valve on delay
+                                250,        // Crimper valve on delay
+                                250,        // Crimper valve off delay
+                                300);       // Insert valve off delay
 
 void setup()
 {
@@ -51,19 +73,20 @@ void setup()
 #endif
   configAllPins();
   delay(1000);
-  
-  pt78_inserter.start();
-  tubeFeeder.start();
+
+  // pt78_inserter.start();
+  // tubeFeeder.start();
   crimper_34.start();
+  crimper_34_new.start();
 }
 
 void loop()
 {
 
-  pt78_inserter.run();
-  tubeFeeder.run();
+  // pt78_inserter.run();
+  // tubeFeeder.run();
   crimper_34.run();
-
+  crimper_34_new.run();
   // ------> TESTs <--------
   //// ---> Test 1
   // connect all input pins with the respective output pins
