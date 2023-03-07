@@ -2,7 +2,6 @@
 #include "../lib/board_config/board_config.h"
 #include "../lib/board_config/system_constants.h"
 #include "../lib/basic_functions/basic_functions.h"
-#include "../lib/crimper_control/crimper_control.h"
 #include "../lib/simple_actuator_control/simple_actuator_control.h"
 
 // #include "../lib/pt78_insert_control/pt78_insert_control.h"
@@ -37,31 +36,18 @@
 //                      |     |     |    |     |
 //                  -------------------------------> t, [ms]
 //                      1    550   800  1050  1350
-actuatorPinsAndTimes crimper_34_PinsAndSwitchTimes[] = {{true, outPins[2], 1, 1350},         // PT Feeder valve
-                                                        {true, outPins[1], 550, 1350},       // Tube Insert valve
-                                                        {true, outPins[0], 800, 1050}};      // Crimping valve
-SimpleActuatorControl crimper_34_new = SimpleActuatorControl("3/4 Crimper NEW",              // Unit name
-                                                             true,                           // Sensor driven operation
-                                                             inPins[0],                      // Sensor input pin
-                                                             HIGH,                           // Sensor active on HIGH
-                                                             250,                            // Detecton debounce time
-                                                             1400,                           // Total cycle time
-                                                             3,                              // Number of actuators / cylinders
-                                                             crimper_34_PinsAndSwitchTimes); // Timing matrix
+actuatorPinsAndTimes crimper_34_PinsAndSwitchTimes[] = {{true, outPins[8], 1, 1350},     // PT Feeder valve
+                                                        {true, outPins[7], 550, 1350},   // Tube Insert valve
+                                                        {true, outPins[6], 800, 1050}};  // Crimping valve
+SimpleActuatorControl crimper_34 = SimpleActuatorControl("3/4 Crimper",                  // Unit name
+                                                         true,                           // Sensor driven operation
+                                                         inPins[2],                      // Sensor input pin
+                                                         HIGH,                           // Sensor active on HIGH
+                                                         250,                            // Detecton debounce time
+                                                         1400,                           // Total cycle time
+                                                         3,                              // Number of actuators / cylinders
+                                                         crimper_34_PinsAndSwitchTimes); // Timing matrix
 // -------------------< End of: 3/4" Crimper  >---------------------------------------------------------------
-
-CrimperCtrlFSM
-    crimper_34 = CrimperCtrlFSM(inPins[2],  // Inductive sensor pin
-                                HIGH,       // Sensor Detects = HIGH
-                                outPins[3], // Piston para remachar / crimper valve pin
-                                outPins[4], // Piston para mover el tubo /  tube insert valve pin
-                                outPins[5], // Piston para insertar el plug tip / plug tip feeder valve pin
-                                true,       // Crimping operation active = true/false
-                                250,        // Sensor confirmation time interval
-                                550,        // Insert valve on delay
-                                250,        // Crimper valve on delay
-                                250,        // Crimper valve off delay
-                                300);       // Insert valve off delay
 
 void setup()
 {
@@ -77,7 +63,6 @@ void setup()
   // pt78_inserter.start();
   // tubeFeeder.start();
   crimper_34.start();
-  crimper_34_new.start();
 }
 
 void loop()
@@ -86,7 +71,6 @@ void loop()
   // pt78_inserter.run();
   // tubeFeeder.run();
   crimper_34.run();
-  crimper_34_new.run();
   // ------> TESTs <--------
   //// ---> Test 1
   // connect all input pins with the respective output pins
