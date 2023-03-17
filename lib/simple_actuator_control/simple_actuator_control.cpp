@@ -8,20 +8,14 @@ char *SACStatesStr[] = {"initPosition",
                         "confirmObjRemoval",
                         "inactiveState"};
 
-SimpleActuatorControl::SimpleActuatorControl(char unitName[20],                               // Unit name for logging max. 20 chars
-                                             boolean sensorDrivenOperation,                   // Sensor detection is activation the operation? TRUE / FALSE
-                                             uint8_t inPinSensor,                             // Sensor input pin: Please use in pins defined in board config file
-                                             uint8_t sensorDetectsOn,                         // Sensor detects on: HIGH / LOW depending on its type: PNP / NPN
-                                             uint16_t confirmTimeInterval,                    // Sensor detection confirm time interval
-                                             uint16_t actuationCycle,                         // Full actuation cycle time
-                                             uint8_t actuatorsQty,                            // Quantity of all simple (ditial outputs) actuators
-                                             actuatorPinsAndTimes actOutPinsAndSwitchTimes[]) // Output timing matrix
+SimpleActuatorControl::SimpleActuatorControl(String unitName,                                   // Unit name for logging max. 20 chars
+                                             sensorOperationConfig sensorConfig,                // Sensor driven operation configuration
+                                             uint16_t actuationCycle,                           // Full actuation cycle time
+                                             uint8_t actuatorsQty,                              // Quantity of all simple (ditial outputs) actuators
+                                             actuatorPinsAndTimes actOutPinsAndSwitchTimes[10]) // Output timing matrix
 {
-  strcpy(_unitName, unitName);
-  _sensorDrivenOperation = sensorDrivenOperation;
-  _inPinSensor = inPinSensor;
-  _sensorDetectsOn = sensorDetectsOn;
-  _confirmTimeInterval = confirmTimeInterval;
+  _unitName = unitName;
+  _sensorConfig = sensorConfig;
   _actuationCycle = actuationCycle;
   _actuatorsQty = actuatorsQty;
   // Copy the actuators pins and time matrix to the private variable (unchangable after initiation)
@@ -29,6 +23,7 @@ SimpleActuatorControl::SimpleActuatorControl(char unitName[20],                 
     _actOutPinsAndSwitchTimes[i] = actOutPinsAndSwitchTimes[i];
 
   _currentState = initPosition;
+  _objCounter = 0;
 }
 
 // Moves all the actuators in their init state: all outPins => LOW
@@ -40,12 +35,12 @@ void SimpleActuatorControl::actuatorsInitState()
 
 boolean SimpleActuatorControl::objIsDetected()
 {
-  return objDetected(_inPinSensor, _sensorDetectsOn);
+  return objDetected(_sensorConfig.sensorInPin, _sensorConfig.sensorDetectsOn);
 }
 
 boolean SimpleActuatorControl::objIsRemoved()
 {
-  return not objDetected(_inPinSensor, _sensorDetectsOn);
+  return not objDetected(_sensorConfig.sensorInPin, _sensorConfig.sensorDetectsOn);
 }
 
 unsigned long SimpleActuatorControl::getTimeInterval()
@@ -74,8 +69,7 @@ void SimpleActuatorControl::changeState(SACStates nextState)
 {
   if (_currentState != nextState)
   {
-    Serial.print(_unitName);
-    Serial.print(" State: ");
+    Serial.print(_unitName + " State: ");
     Serial.println(SACStatesStr[nextState]);
   }
   _currentState = nextState;
@@ -84,16 +78,27 @@ void SimpleActuatorControl::changeState(SACStates nextState)
 
 void SimpleActuatorControl::start()
 {
-  Serial.print(_unitName);
-  Serial.println(" STARTED!");
+  actuatorsInitState(); // Moving to init position
+  delay(100);
+  Serial.println(_unitName + " STARTED!");
   changeState(waitOnObjDetection);
 }
 
 void SimpleActuatorControl::stop()
 {
-  Serial.print(_unitName);
-  Serial.println(" STOPPED!");
+  Serial.println(_unitName + " STOPPED!");
+  changeState(inactiveState);
+}
+
+void SimpleActuatorControl::moveToInitPos()
+{
+  Serial.println(_unitName + " MOVING TO INIT POSITION!");
   changeState(initPosition);
+}
+
+SACStates SimpleActuatorControl::getMachineState()
+{
+  return _currentState;
 }
 
 unsigned int SimpleActuatorControl::run()
@@ -104,13 +109,19 @@ unsigned int SimpleActuatorControl::run()
     actuatorsInitState();
     break;
   case waitOnObjDetection:
-    if (objIsDetected())
-    {
-      if (timeElapsed(_confirmTimeInterval))
-        changeState(timedActuatorControl);
-    }
+    if (_sensorConfig.objDetectedConfirmation)
+      if (objIsDetected())
+      {
+        if (timeElapsed(_sensorConfig.confirmTimeInterval))
+        {
+          changeState(timedActuatorControl);
+          _objCounter++;
+        }
+      }
+      else
+        changeState(waitOnObjDetection);
     else
-      changeState(waitOnObjDetection);
+      changeState(timedActuatorControl);
     break;
   case timedActuatorControl:
     if (timeElapsed(_actuationCycle))
@@ -119,13 +130,16 @@ unsigned int SimpleActuatorControl::run()
       setOutputs();
     break;
   case confirmObjRemoval:
-    if (objIsRemoved())
-    {
-      if (timeElapsed(_confirmTimeInterval))
-        changeState(waitOnObjDetection);
-    }
+    if (_sensorConfig.objRemovedConfirmation)
+      if (objIsRemoved())
+      {
+        if (timeElapsed(_sensorConfig.confirmTimeInterval))
+          changeState(waitOnObjDetection);
+      }
+      else
+        changeState(confirmObjRemoval);
     else
-      changeState(confirmObjRemoval);
+      changeState(waitOnObjDetection);
     break;
   case inactiveState:
     break;
@@ -133,4 +147,5 @@ unsigned int SimpleActuatorControl::run()
     changeState(waitOnObjDetection);
     break;
   }
+  return _objCounter;
 }

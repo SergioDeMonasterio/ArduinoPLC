@@ -11,9 +11,9 @@
 // Air Cylinder Switches Constants
 #define FEEDER_ARM_MOVE_IN 0
 #define FEEDER_ARM_MOVE_OUT not FEEDER_ARM_MOVE_IN
-#define FEEDER_DOWN_TUBE 1
+#define FEEDER_DOWN_TUBE 0
 #define FEEDER_LIFT_TUBE not FEEDER_DOWN_TUBE
-#define FEEDER_HORIZONTAL_INIT_POS 1
+#define FEEDER_HORIZONTAL_INIT_POS 0
 #define FEEDER_HORIZONTAL_OUT_POS not FEEDER_HORIZONTAL_INIT_POS
 
 // -----> End: Tube Feeding System <-----

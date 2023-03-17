@@ -25,6 +25,17 @@ struct actuatorPinsAndTimes
   uint16_t startActTime;
   uint16_t stopActTime;
 };
+
+// Sensor detection config:
+// {objDetConfirm: TRUE/FALSE, objRemovedConfirm: TRUE/FALSE, SensInPin: #Pin, SensDetectsOn: HIGH/LOW, DebounceTime}
+struct sensorOperationConfig
+{
+  bool objDetectedConfirmation;
+  bool objRemovedConfirmation;
+  uint8_t sensorInPin;
+  uint8_t sensorDetectsOn;
+  uint16_t confirmTimeInterval;
+};
 // SimpleActuatorControl controls simple digital outputs according to the defined timings
 // It has also a sensor input pin for sensor driven operation if needed.
 // In case of sensor driven operation: the unit starts the operation after detecting an object.
@@ -46,17 +57,15 @@ struct actuatorPinsAndTimes
 class SimpleActuatorControl
 {
 private:
-  char _unitName[20];             // Unit name for logging max. 20 chars
-  boolean _sensorDrivenOperation; // Sensor detection is activation the operation? TRUE / FALSE
-  uint8_t _inPinSensor;           // Sensor input pin: Please use in pins defined in board config file
-  uint8_t _sensorDetectsOn;       // Sensor detects on: HIGH / LOW depending on its type: PNP / NPN
-  uint16_t _confirmTimeInterval;  // Sensor detection confirm time interval
-  uint16_t _actuationCycle;       // full actuation cycle time: after this time has elapsed the machine goes to a new detection cycle
-  uint8_t _actuatorsQty;          // Quantity of all simple (ditial outputs) actuators
-  unsigned long _lastChangeTime;  // the time stamp of the last machine state change
+  String _unitName; // Unit name for logging max. 20 chars
+
+  sensorOperationConfig _sensorConfig;
+  uint16_t _actuationCycle;      // full actuation cycle time: after this time has elapsed the machine goes to a new detection cycle
+  uint8_t _actuatorsQty;         // Quantity of all simple (ditial outputs) actuators
+  unsigned long _lastChangeTime; // the time stamp of the last machine state change
 
   SACStates _currentState; // Current machine state
-
+  unsigned int _objCounter;
   // Moves all the actuators in their init state: all outPins => LOW
   void actuatorsInitState();
   // returns TRUE if an object is detected all the time during confirmTimeInterval
@@ -74,21 +83,20 @@ private:
   // Array of all actuator digital output pins start- and stop- times
   //  Actuator On/Off,  BoardPin,  ____|--------------|______
   // {0/1,              outPin[0], startActTime, stopActTime}
-  actuatorPinsAndTimes _actOutPinsAndSwitchTimes[];
+  actuatorPinsAndTimes _actOutPinsAndSwitchTimes[10];
 
 public:
   SimpleActuatorControl(
-      char unitName[20],             // Unit name for logging max. 20 chars
-      boolean sensorDrivenOperation, // Sensor detection is activation the operation? TRUE / FALSE
-      uint8_t inPinSensor,           // Sensor input pin: Please use in pins defined in board config file
-      uint8_t sensorDetectsOn,       // Sensor detects on: HIGH / LOW depending on its type: PNP / NPN
-      uint16_t confirmTimeInterval,  // Sensor detection confirm time interval
-      uint16_t actuationCycle,       // Full actuation cycle time: after this time has elapsed the machine goes to a new detection cycle
-      uint8_t actuatorsQty,          // Quantity of all simple (ditial outputs) actuators
+      String unitName, // Unit name for logging max. 20 chars
+      // Sensor detection config:
+      // {objDetConfirm: TRUE/FALSE, objRemovedConfirm: TRUE/FALSE, SensInPin: #Pin, SensDetectsOn: HIGH/LOW, DebounceTime}
+      sensorOperationConfig sensorConfig,
+      uint16_t actuationCycle, // Full actuation cycle time: after this time has elapsed the machine goes to a new detection cycle
+      uint8_t actuatorsQty,    // Quantity of all simple (ditial outputs) actuators
       // Array of all actuator digital output pins start- and stop- times
       //  Actuator On/Off,  BoardPin,  ____|--------------|______
       // {0/1,              outPin[0], startActTime, stopActTime}
-      actuatorPinsAndTimes actOutPinsAndSwitchTimes[]);
+      actuatorPinsAndTimes actOutPinsAndSwitchTimes[10]);
 
   // Brings the unit into the initial position
   void start();
@@ -96,6 +104,10 @@ public:
   unsigned int run();
   // Stops the actuator action
   void stop();
+  // Moving to init position
+  void moveToInitPos();
+  // Returns Machine State
+  SACStates getMachineState();
 };
 
 #endif
