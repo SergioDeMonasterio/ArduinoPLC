@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include "../lib/board_config/board_config.h"
+#include "../lib/system_config/board_config.h"
 #include "../lib/basic_functions/basic_functions.h"
-#include "../lib/board_config/system_definition.h"
+#include "../lib/system_config/system_config.h"
 #include "../lib/simple_actuator_control/simple_actuator_control.h"
 
 void setup()
