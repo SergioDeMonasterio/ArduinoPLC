@@ -23,7 +23,7 @@ void setup()
 void loop()
 {
   // Main machine breaker: AT THE MOMENT JUST STOP THE FEEDER!
-  if (objDetected(machineBreakerInPin, HIGH))
+  if (objDetected(machineBreakerInPin, LOW))
   {
     Serial.println("Breaker activated !!!!!");
     // Stop all units movements
